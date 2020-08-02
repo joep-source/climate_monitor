@@ -1,9 +1,12 @@
+import sys
 import time
 import json
 import logging
+from Adafruit_IO import Client, Feed, RequestError
 import mh_z19
 import bme280
-from Adafruit_IO import Client, Feed, RequestError
+import leds
+
 
 ADAFRUIT_IO_KEY = 'e0ee94aa282142709e4acbde576cfd8f'
 ADAFRUIT_IO_USERNAME = 'joepleonardo'
@@ -21,16 +24,13 @@ humidity_feed = 0
 pressure_feed = 0
 
 
-def sample_avg(time_total_sec, time_sample_sec):
-    total_time = time_total_sec
-    sleep_time = time_sample_sec
+def sample_avg(total_time, sleep_time):
     no_samples = int(total_time/sleep_time)
     sample = {'co2': 0.0,
               'co2_temp': 0.0,
               'temp': 0.0,
               'humidity': 0.0,
-              'pressure': 0.0
-              }
+              'pressure': 0.0}
     mh_z19_correct = True
     
     # Sum all samples over time
@@ -65,7 +65,7 @@ def sample_avg(time_total_sec, time_sample_sec):
     logging.info('temp:     ' + str(sample['temp']))
     logging.info('humidity: ' + str(sample['humidity']))
     logging.info('pressure: ' + str(sample['pressure']))
-    return sample
+    return sample, not mh_z19_correct
 
 
 def setup_aio():
@@ -120,21 +120,34 @@ def send_sample(aio, sample):
     logging.info('sending sample complete')
 
 
-def init_logger():
+def logger_setup():
     logging.basicConfig(filename=LOG_FILE_NAME, level=LOG_LEVEL, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logging.info('initialized logger')
 
 
-init_logger()
+# Init everything
+leds.setup()
+leds.on()
+logger_setup()
 bme280.setup_all()
 logging.info('initialized bme280')
 aio = setup_aio()
+leds.off()
+leds.on(leds.LED_G)  # first round with green
 
 while True:
     try:
-        sample = sample_avg(60, 6)
+        sample, error = sample_avg(total_time=60, sleep_time=6)
         send_sample(aio, sample)
+        if error:
+            leds.on(leds.LED_R)
+        else:
+            leds.off()
+    except KeyboardInterrupt as e:
+        leds.off()
+        sys.exit(0)
     except:
+        leds.on(leds.LED_Y)
         logging.error('main loop')
         time.sleep(10)
 
