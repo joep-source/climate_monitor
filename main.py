@@ -2,6 +2,7 @@ import sys
 import time
 import json
 import logging
+import logging.handlers as handlers
 from Adafruit_IO import Client, Feed, RequestError
 import mh_z19
 import bme280
@@ -11,7 +12,7 @@ import leds
 ADAFRUIT_IO_KEY = 'e0ee94aa282142709e4acbde576cfd8f'
 ADAFRUIT_IO_USERNAME = 'joepleonardo'
 
-LOG_FILE_NAME = 'logs.log'
+LOG_FILE_NAME = 'logs/log'
 LOG_LEVEL = logging.WARNING # logging.INFO
 
 ERROR_VALUE = 9999
@@ -22,6 +23,9 @@ co2_feed = 0
 temp_feed = 0
 humidity_feed = 0
 pressure_feed = 0
+
+# Global logger
+logger = logging.getLogger('my_app')
 
 
 def sample_avg(total_time, sleep_time):
@@ -45,7 +49,7 @@ def sample_avg(total_time, sleep_time):
                 mh_z19_correct = False
                 sample['co2'] = ERROR_VALUE
                 sample['co2_temp'] = ERROR_VALUE
-                logging.error('mhz19 error, round '+str(round))
+                logger.error('mhz19 error, round '+str(round))
         # Save bme280 data
         bme280_data = bme280.real_all_dict()
         sample['temp'] += bme280_data['temperature']
@@ -60,18 +64,18 @@ def sample_avg(total_time, sleep_time):
             sample[item] = (float)(sample[item])/no_samples
             
     # log sample
-    logging.info('co2:      ' + str(sample['co2']))
-    logging.info('co2 temp: ' + str(sample['co2_temp']))
-    logging.info('temp:     ' + str(sample['temp']))
-    logging.info('humidity: ' + str(sample['humidity']))
-    logging.info('pressure: ' + str(sample['pressure']))
+    logger.info('co2:      ' + str(sample['co2']))
+    logger.info('co2 temp: ' + str(sample['co2_temp']))
+    logger.info('temp:     ' + str(sample['temp']))
+    logger.info('humidity: ' + str(sample['humidity']))
+    logger.info('pressure: ' + str(sample['pressure']))
     return sample, not mh_z19_correct
 
 
 def setup_aio():
     # Create an instance of the REST client
     aio = Client(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
-    logging.info('initialized AdafuitIO')
+    logger.info('initialized AdafuitIO client')
 
     # Assign the feeds that already exitst, otherwise create and assign them.
     global co2_feed
@@ -111,30 +115,36 @@ def send_to_aio(aio, key, data):
 
 
 def send_sample(aio, sample):
-    logging.debug('sending sample start')
+    logger.debug('sending sample start')
     send_to_aio(aio, co2_feed.key,  sample['co2'])
     #send_to_aio(aio, co2t_feed.key, sample['co2_temp'])
     send_to_aio(aio, temp_feed.key, sample['temp'])
     send_to_aio(aio, humidity_feed.key, sample['humidity'])
     send_to_aio(aio, pressure_feed.key, sample['pressure'])
-    logging.info('sending sample complete')
+    logger.info('sending sample complete')
 
 
 def logger_setup():
-    logging.basicConfig(filename=LOG_FILE_NAME, level=LOG_LEVEL, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-    logging.info('initialized logger')
+    logger.setLevel(LOG_LEVEL)
+    logHandler = handlers.TimedRotatingFileHandler(LOG_FILE_NAME, when='midnight', interval=1, backupCount=2)
+    logHandler.setLevel(logging.INFO)
+    logHandler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(logHandler)
+    logger.info('initialized logger')
 
 
 # Init everything
 leds.setup()
 leds.on()
+logger.info('initialized leds')
 logger_setup()
 bme280.setup_all()
-logging.info('initialized bme280')
+logger.info('initialized bme280')
 aio = setup_aio()
+logger.info('initialized AdafuitIO')
+
 leds.off()
 leds.on(leds.LED_G)  # first round with green
-
 while True:
     try:
         sample, error = sample_avg(total_time=60, sleep_time=6)
@@ -146,8 +156,9 @@ while True:
     except KeyboardInterrupt as e:
         leds.off()
         sys.exit(0)
-    except:
+    except Exception as e:
         leds.on(leds.LED_Y)
-        logging.error('main loop')
+        logger.error('main loop: ' + str(repr(e)))
+        logger.exception('main loop exception')
         time.sleep(10)
 
