@@ -1,6 +1,6 @@
 adafruit:
-  key: 'e0ee94aa282142709e4acbde576cfd8f'
-  username: 'joepleonardo'
+  key: ''
+  username: ''
 
 log:
   file_name: 'logs/log'
