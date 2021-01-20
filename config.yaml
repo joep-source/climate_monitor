@@ -1,0 +1,8 @@
+adafruit:
+  key: 'e0ee94aa282142709e4acbde576cfd8f'
+  username: 'joepleonardo'
+
+log:
+  file_name: 'logs/log'
+  print_format: '%(asctime)s - %(levelname)s - %(message)s'
+  level: 'WARNING'  # INFO WARNING ERROR
