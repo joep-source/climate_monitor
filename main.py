@@ -12,6 +12,7 @@ import bme280
 import leds
 
 
+# Load settings
 config = yaml.safe_load(open("config.yaml"))
 ADAFRUIT_IO_KEY = config['adafruit']['key']
 ADAFRUIT_IO_USERNAME = config['adafruit']['username']

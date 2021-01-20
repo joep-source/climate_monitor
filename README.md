@@ -2,12 +2,13 @@
 A Raspberry Pi IoT device to monitor room climate (hobby project). Measures CO2, temperature and humidity.
 
 ## Hardware
+- Raspberry Pi model 3B
 - MH-Z19 sensor
 - BME280 sensor
 - Leds
 
 ## Software
-Raspberry Pi model 3B running Raspbian
+Running Raspbian Buster OS.
 
 ### Used packages
 - adafruit-io v2.4.0
@@ -15,7 +16,6 @@ Raspberry Pi model 3B running Raspbian
 Included in project:
 - bme280 [source](https://github.com/kbrownlees/bme280/tree/master/bme280)
 - mh-z19 (modified) [source](https://github.com/UedaTakeyuki/mh-z19/blob/master/mh_z19.py)
-
 
 ### Raspbian configurations
 - Execute ```$ sudo raspi-config``` to set Serial (select no, then yes) & I2C.

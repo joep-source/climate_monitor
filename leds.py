@@ -1,13 +1,19 @@
 import RPi.GPIO as GPIO
 import datetime as dt
+import os
+import yaml
 
-LED_R = 29
+
+# Load settings
+config = yaml.safe_load(open("config.yaml"))
+NIGHT_LEDS_OFF = config['leds']['night_off']
+NIGHT_START_HOUR = config['leds']['night_start_hour']
+NIGHT_END_HOUR = config['leds']['night_end_hour']
+
+# GPIO pins
+LED_R = 29 
 LED_Y = 31
 LED_G = 33
-
-NIGHT_LEDS_OFF = True
-NIGHT_START_HOUR = 23
-NIGHT_END_HOUR = 7
 
 
 def setup():
